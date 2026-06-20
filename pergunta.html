@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Uma pergunta especial 💌</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a0533 0%, #3d0f5e 40%, #7b2d8b 70%, #c2547a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Lato', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Floating hearts background */
+    .hearts-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .heart-float {
+      position: absolute;
+      bottom: -60px;
+      font-size: 1.4rem;
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(-10deg); opacity: 0; }
+      10%  { opacity: 0.35; }
+      90%  { opacity: 0.2; }
+      100% { transform: translateY(-110vh) rotate(15deg); opacity: 0; }
+    }
+
+    /* Card */
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 28px;
+      padding: 52px 48px 44px;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+
+    .envelope {
+      font-size: 3.2rem;
+      display: block;
+      margin-bottom: 18px;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.12); }
+    }
+
+    .name {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.15rem;
+      color: #f0b8d8;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+
+    .question {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 36px;
+      text-shadow: 0 2px 20px rgba(194,84,122,0.5);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 18px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: 'Lato', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 38px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-sim {
+      background: linear-gradient(135deg, #e8487a, #c2387a);
+      color: #fff;
+      box-shadow: 0 8px 28px rgba(232,72,122,0.55);
+    }
+    .btn-sim:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 14px 36px rgba(232,72,122,0.7);
+    }
+    .btn-sim:active { transform: scale(0.97); }
+
+    .btn-nao {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.2);
+      position: fixed; /* set by JS */
+    }
+    .btn-nao:hover { cursor: not-allowed; }
+
+    /* Success screen */
+    .success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .success.active { display: flex; }
+    .card-content.hidden { display: none; }
+
+    .big-heart {
+      font-size: 5rem;
+      animation: heartBeat 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes heartBeat {
+      from { transform: scale(1); }
+      to   { transform: scale(1.2); }
+    }
+
+    .te-amo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.6rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 40px rgba(232,72,122,0.9);
+      animation: fadeSlideIn 0.6s ease both;
+    }
+    .te-amo-sub {
+      font-size: 1rem;
+      color: #f0b8d8;
+      font-style: italic;
+      animation: fadeSlideIn 0.8s 0.2s ease both;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Confetti */
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      pointer-events: none;
+      animation: confettiFall linear forwards;
+      z-index: 999;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hearts-bg" id="heartsBg"></div>
+
+  <div class="card">
+    <div class="card-content" id="cardContent">
+      <span class="envelope">💌</span>
+      <p class="name" id="nameLabel">Para a pessoa mais especial...</p>
+      <h1 class="question">Moçaaaaaaaa quer namorar<br>comigo?</h1>
+      <div class="buttons">
+        <button class="btn btn-sim" id="btnSim">Sim 💗</button>
+        <button class="btn btn-nao" id="btnNao">Não</button>
+      </div>
+    </div>
+
+    <div class="success" id="successScreen">
+      <div class="big-heart">❤️</div>
+      <h2 class="te-amo">Te Amo! 💕</h2>
+      <p class="te-amo-sub">Sabia que ias dizer sim...</p>
+    </div>
+  </div>
+
+  <script>
+    /* ── Floating hearts background ── */
+    const heartsBg = document.getElementById('heartsBg');
+    const heartEmojis = ['💗','💖','💕','💓','🌸','✨','💝'];
+    for (let i = 0; i < 22; i++) {
+      const h = document.createElement('span');
+      h.classList.add('heart-float');
+      h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+      h.style.left = Math.random() * 100 + 'vw';
+      h.style.fontSize = (0.9 + Math.random() * 1.4) + 'rem';
+      h.style.animationDuration = (7 + Math.random() * 10) + 's';
+      h.style.animationDelay = (Math.random() * 12) + 's';
+      heartsBg.appendChild(h);
+    }
+
+    /* ── Optional: put a name via ?nome=Ana in URL ── */
+    const params = new URLSearchParams(location.search);
+    const nome = params.get('nome');
+    if (nome) document.getElementById('nameLabel').textContent = `Para ${nome} 💌`;
+
+    /* ── "Não" button runs away ── */
+    const btnNao = document.getElementById('btnNao');
+    let naoRect = null;
+    let naoPos = { x: null, y: null };
+    let placed = false;
+
+    function placeNaoInitial() {
+      /* Position "Não" next to "Sim" naturally first render */
+      const sim = document.getElementById('btnSim');
+      const sr = sim.getBoundingClientRect();
+      naoPos.x = sr.right + 18;
+      naoPos.y = sr.top;
+      btnNao.style.left = naoPos.x + 'px';
+      btnNao.style.top  = naoPos.y + 'px';
+      btnNao.style.position = 'fixed';
+      placed = true;
+    }
+
+    function moveNao(e) {
+      if (!placed) return;
+      const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
+      if (clientX == null) return;
+
+      const rect = btnNao.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top  + rect.height / 2;
+      const dist = Math.hypot(clientX - cx, clientY - cy);
+
+      if (dist < 120) {
+        const angle = Math.atan2(cy - clientY, cx - clientX);
+        const flee = 160 - dist;
+        let nx = naoPos.x + Math.cos(angle) * flee;
+        let ny = naoPos.y + Math.sin(angle) * flee;
+
+        /* Keep inside viewport */
+        nx = Math.max(0, Math.min(window.innerWidth  - rect.width,  nx));
+        ny = Math.max(0, Math.min(window.innerHeight - rect.height, ny));
+
+        naoPos.x = nx;
+        naoPos.y = ny;
+        btnNao.style.left = nx + 'px';
+        btnNao.style.top  = ny + 'px';
+      }
+    }
+
+    window.addEventListener('mousemove', moveNao);
+    window.addEventListener('touchmove', moveNao, { passive: true });
+
+    setTimeout(placeNaoInitial, 80);
+
+    /* ── "Sim" click → celebration ── */
+    document.getElementById('btnSim').addEventListener('click', () => {
+      document.getElementById('cardContent').classList.add('hidden');
+      document.getElementById('successScreen').classList.add('active');
+      launchConfetti();
+    });
+
+    /* ── Confetti ── */
+    function launchConfetti() {
+      const colors = ['#e8487a','#f5c6d8','#c2387a','#fff','#ffb347','#a8edea'];
+      for (let i = 0; i < 90; i++) {
+        setTimeout(() => {
+          const c = document.createElement('div');
+          c.classList.add('confetti-piece');
+          c.style.left = Math.random() * 100 + 'vw';
+          c.style.background = colors[Math.floor(Math.random() * colors.length)];
+          c.style.width  = (6 + Math.random() * 8) + 'px';
+          c.style.height = (6 + Math.random() * 8) + 'px';
+          c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+          c.style.animationDuration = (2 + Math.random() * 2) + 's';
+          document.body.appendChild(c);
+          setTimeout(() => c.remove(), 4000);
+        }, i * 30);
+      }
+    }
+  </script>
+</body>
+</html>
