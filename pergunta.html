@@ -19,7 +19,6 @@
       position: relative;
     }
 
-    /* Floating hearts background */
     .hearts-bg {
       position: fixed;
       inset: 0;
@@ -40,7 +39,6 @@
       100% { transform: translateY(-110vh) rotate(15deg); opacity: 0; }
     }
 
-    /* Card */
     .card {
       position: relative;
       z-index: 10;
@@ -91,6 +89,8 @@
       gap: 18px;
       justify-content: center;
       flex-wrap: wrap;
+      position: relative;
+      min-height: 60px;
     }
 
     .btn {
@@ -104,6 +104,9 @@
       padding: 14px 38px;
       cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .btn-sim {
@@ -121,11 +124,10 @@
       background: rgba(255,255,255,0.1);
       color: rgba(255,255,255,0.6);
       border: 1px solid rgba(255,255,255,0.2);
-      position: fixed; /* set by JS */
+      position: fixed;
+      transition: left 0.15s ease, top 0.15s ease;
     }
-    .btn-nao:hover { cursor: not-allowed; }
 
-    /* Success screen */
     .success {
       display: none;
       flex-direction: column;
@@ -164,12 +166,8 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Confetti */
     .confetti-piece {
       position: fixed;
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
       pointer-events: none;
       animation: confettiFall linear forwards;
       z-index: 999;
@@ -189,7 +187,7 @@
       <span class="envelope">💌</span>
       <p class="name" id="nameLabel">Para a pessoa mais especial...</p>
       <h1 class="question">Moçaaaaaaaa quer namorar<br>comigo?</h1>
-      <div class="buttons">
+      <div class="buttons" id="buttonsArea">
         <button class="btn btn-sim" id="btnSim">Sim 💗</button>
         <button class="btn btn-nao" id="btnNao">Não</button>
       </div>
@@ -203,7 +201,7 @@
   </div>
 
   <script>
-    /* ── Floating hearts background ── */
+    /* ── Floating hearts ── */
     const heartsBg = document.getElementById('heartsBg');
     const heartEmojis = ['💗','💖','💕','💓','🌸','✨','💝'];
     for (let i = 0; i < 22; i++) {
@@ -217,61 +215,84 @@
       heartsBg.appendChild(h);
     }
 
-    /* ── Optional: put a name via ?nome=Ana in URL ── */
+    /* ── URL name param ── */
     const params = new URLSearchParams(location.search);
     const nome = params.get('nome');
     if (nome) document.getElementById('nameLabel').textContent = `Para ${nome} 💌`;
 
     /* ── "Não" button runs away ── */
     const btnNao = document.getElementById('btnNao');
-    let naoRect = null;
-    let naoPos = { x: null, y: null };
+    let naoX = 0, naoY = 0;
     let placed = false;
 
     function placeNaoInitial() {
-      /* Position "Não" next to "Sim" naturally first render */
       const sim = document.getElementById('btnSim');
       const sr = sim.getBoundingClientRect();
-      naoPos.x = sr.right + 18;
-      naoPos.y = sr.top;
-      btnNao.style.left = naoPos.x + 'px';
-      btnNao.style.top  = naoPos.y + 'px';
-      btnNao.style.position = 'fixed';
+      naoX = sr.right + 18;
+      naoY = sr.top;
+      btnNao.style.left = naoX + 'px';
+      btnNao.style.top  = naoY + 'px';
       placed = true;
     }
 
-    function moveNao(e) {
-      if (!placed) return;
-      const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
-      const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
-      if (clientX == null) return;
+    function getClientXY(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
 
+    function tryFlee(clientX, clientY) {
+      if (!placed) return;
       const rect = btnNao.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top  + rect.height / 2;
       const dist = Math.hypot(clientX - cx, clientY - cy);
 
-      if (dist < 120) {
+      if (dist < 140) {
         const angle = Math.atan2(cy - clientY, cx - clientX);
-        const flee = 160 - dist;
-        let nx = naoPos.x + Math.cos(angle) * flee;
-        let ny = naoPos.y + Math.sin(angle) * flee;
+        const flee = 170 - dist;
+        let nx = naoX + Math.cos(angle) * flee;
+        let ny = naoY + Math.sin(angle) * flee;
 
-        /* Keep inside viewport */
-        nx = Math.max(0, Math.min(window.innerWidth  - rect.width,  nx));
-        ny = Math.max(0, Math.min(window.innerHeight - rect.height, ny));
+        nx = Math.max(4, Math.min(window.innerWidth  - rect.width  - 4, nx));
+        ny = Math.max(4, Math.min(window.innerHeight - rect.height - 4, ny));
 
-        naoPos.x = nx;
-        naoPos.y = ny;
+        naoX = nx;
+        naoY = ny;
         btnNao.style.left = nx + 'px';
         btnNao.style.top  = ny + 'px';
       }
     }
 
-    window.addEventListener('mousemove', moveNao);
-    window.addEventListener('touchmove', moveNao, { passive: true });
+    window.addEventListener('mousemove', e => {
+      tryFlee(e.clientX, e.clientY);
+    });
 
-    setTimeout(placeNaoInitial, 80);
+    /* Touch: track finger movement and flee */
+    window.addEventListener('touchmove', e => {
+      const t = e.touches[0];
+      tryFlee(t.clientX, t.clientY);
+    }, { passive: true });
+
+    /* Also flee on touchstart so tapping near it already moves it */
+    window.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      tryFlee(t.clientX, t.clientY);
+    }, { passive: true });
+
+    /* Prevent "Não" from ever being tapped successfully */
+    btnNao.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      tryFlee(t.clientX, t.clientY);
+    }, { passive: false });
+
+    btnNao.addEventListener('click', e => {
+      e.preventDefault();
+    });
+
+    setTimeout(placeNaoInitial, 100);
 
     /* ── "Sim" click → celebration ── */
     document.getElementById('btnSim').addEventListener('click', () => {
